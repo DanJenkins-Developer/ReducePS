@@ -7,6 +7,22 @@
 # The program does not check for syntax and assumes that the original script is in a format that, once converted 
 # into a single line, will execute correctly when passed to the -Command / -c. Comments are removed from scripts.
 
+import argparse
+from pathlib import Path
+
+def reduce(script: str):
+    # Open source file.
+    with script.open('r') as s:
+        content = s.readlines()
+
+    # Strip out content like comments and spaces
+    content = [line.strip() for line in content if lineConditionsMet(line.strip())]
+
+    # create one line with space splitting each item from contennt
+    one_line = ' '.join(content)
+
+    return one_line
+
 def lineConditionsMet(l : str):
     met = True
     if (l == "" or 
@@ -16,43 +32,40 @@ def lineConditionsMet(l : str):
     
     return met
 
-import argparse
-from pathlib import Path
+def write_out(content: str, directory: str, file: str = ""):
 
-# Parse command line args. Source powershell script and a target directory for the reduced script are required.
-parser = argparse.ArgumentParser()
-parser.add_argument("source_file", help="Path to Powershell script.", type=str)
-parser.add_argument("target_directory", help="Target directory for the converted file.", type=str)
-args = parser.parse_args()
+    if (file ==""):
+        file = 'reduced.cmd'
 
-# Make provided paths absolute
-sfile = Path(args.source_file).resolve()
-tdir = Path(args.target_directory).resolve()
+    with open(directory / file, 'w') as f:
+        ver = 'v1.0'
+        f.writelines([
+            f"C:\\Windows\\System32\\WindowsPowerShell\\{ver}\\powershell.exe -NoProfile -WindowStyle Hidden -Command \"{content}\""
+        ])
 
-# Check if the user provided arguments exist.
-if (not sfile.is_file()):
-    msg = f"reducePS: {str(sfile)} : No such file" 
-    exit(msg)
+if __name__ == "__main__":
 
-if (not tdir.is_dir()):
-    msg = f"reducePS: {str(tdir)} : No such directory"
-    exit(msg)
+    # Parse command line args. Source powershell script and a target directory for the reduced script are required.
+    parser = argparse.ArgumentParser()
+    parser.add_argument("source_file", help="Path to Powershell script.", type=str)
+    parser.add_argument("target_directory", help="Target directory for the converted file.", type=str)
+    args = parser.parse_args()
 
-# Open source file.
-with sfile.open('r') as script:
-    content = script.readlines()
+    # Make provided paths absolute
+    sfile = Path(args.source_file).resolve()
+    tdir = Path(args.target_directory).resolve()
 
-# Modify list.
-content = [line.strip() for line in content if lineConditionsMet(line.strip())]
+    # Check if the user provided arguments exist.
+    if (not sfile.is_file()):
+        msg = f"reducePS: {str(sfile)} : No such file" 
+        exit(msg)
 
-# create one line with space splitting each item from contennt
-one_line = ' '.join(content)
+    if (not tdir.is_dir()):
+        msg = f"reducePS: {str(tdir)} : No such directory"
+        exit(msg)
 
-# Write out to a new file
-fname = 'reduced.ps1'
-with open(tdir / fname, 'w') as f:
-    ver = 'v1.0'
-    f.writelines([
-        one_line + '\n',
-        f"# execute --command \"C:\\Windows\\System32\\WindowsPowerShell\\{ver}\\powershell.exe -NoProfile -WindowStyle Hidden -Command \"{one_line}\"\""
-    ])
+    write_out(reduce(sfile), tdir)
+
+
+
+
