@@ -13,15 +13,17 @@ from pathlib import Path
 def reduce(script: str):
     # Open source file.
     with script.open('r') as s:
-        content = s.readlines()
+        lines = s.readlines()
 
     # Strip out content like comments and spaces
-    content = [line.strip() for line in content if lineConditionsMet(line.strip())]
+    commands = [line.strip() for line in lines if lineConditionsMet(line.strip())]
 
-    # create one line with space splitting each item from contennt
-    one_line = ' '.join(content)
+    # create one line with space splitting each item from contennt then append to the path to powershell
+    command = ' '.join(commands)
+    path = 'C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe -NoProfile -WindowStyle Hidden -Command'
+    cmd = f"{path} \"{command}\""
 
-    return one_line
+    return cmd
 
 def lineConditionsMet(l : str):
     met = True
@@ -38,10 +40,7 @@ def write_out(content: str, directory: str, file: str = ""):
         file = 'reduced.cmd'
 
     with open(directory / file, 'w') as f:
-        ver = 'v1.0'
-        f.writelines([
-            f"C:\\Windows\\System32\\WindowsPowerShell\\{ver}\\powershell.exe -NoProfile -WindowStyle Hidden -Command \"{content}\""
-        ])
+        f.writelines(content)
 
 if __name__ == "__main__":
 
